@@ -10,21 +10,21 @@ from langchain.embeddings import OpenAIEmbeddings, HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain import HuggingFaceHub
 from langchain.chat_models import ChatOpenAI
-from transformers import PreTrainedTokenizer
+from summarizer import TransformerSummarizer
 
 
 load_dotenv()
 os.environ['OPENAI_API_KEY'] = os.getenv('OPENAI_API_KEY')
 os.environ['HUGGINGFACEHUB_API_TOKEN'] = os.getenv('HUGGINGFACEHUB_API_TOKEN')
 
-hub = st.radio('openai', ['openai', 'huggingface'])
+hub = st.radio('openai', ['openai', 'huggingface-langchain', 'huggingface-native'])
 if hub == 'openai':
     llm_model_name = st.radio('gpt-3.5-turbo', ['gpt-3.5-turbo', 'gpt-4'])
     temperature = st.number_input('temperature', min_value=0.0, max_value=1.0, value=0.7)
     max_tokens = st.number_input('max_tokens', min_value=1, value=600)
     llm_model = ChatOpenAI(temperature=temperature, model_name=llm_model_name, max_tokens=max_tokens)
     embeddings = OpenAIEmbeddings()
-elif hub == 'huggingface':
+elif hub == 'huggingface-langchain':
     llm_model_name = st.radio(
         'gpt2',
         ['gpt2', 'gpt2-large', 'google/flan-t5-xxl', 'databricks/dolly-v2-3b']
@@ -42,25 +42,48 @@ elif hub == 'huggingface':
     embeddings_model = HuggingFaceEmbeddings(model_name=embedding)
     if embeddings_model.client.tokenizer.pad_token is None:
         embeddings_model.client.tokenizer.pad_token = embeddings_model.client.tokenizer.eos_token
+elif hub == 'huggingface-native':
+    llm_model_name = st.radio(
+        'gpt2',
+        ['gpt2', 'gpt2-medium', 'gpt2-large']
+    )
+    min_length = st.number_input('min_length', min_value=1, value=60)
+    summarizer = TransformerSummarizer(transformer_type='GPT2', transformer_model_key=llm_model_name)
 else:
     pass
 
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=900,
-    chunk_overlap=20,
-    length_function=len
-)
-
 uploaded_pdffile = st.file_uploader('Upload a file (.pdf)')
-if (uploaded_pdffile is not None) and (st.button('Summarize!')):
-    pdfbytes = tempfile.NamedTemporaryFile()
-    tempfilename = pdfbytes.name
-    pdfbytes.write(uploaded_pdffile.read())
 
-    loader = PyPDFLoader(tempfilename)
-    pages = loader.load_and_split(text_splitter=text_splitter)
+if hub in ['openai', 'huggingface-langchain']:
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=900,
+        chunk_overlap=20,
+        length_function=len
+    )
 
-    chain = load_summarize_chain(llm=llm_model, chain_type='map_reduce')
-    response = chain.run(pages)
+    if (uploaded_pdffile is not None) and (st.button('Summarize!')):
+        pdfbytes = tempfile.NamedTemporaryFile()
+        tempfilename = pdfbytes.name
+        pdfbytes.write(uploaded_pdffile.read())
 
-    st.markdown(response)
+        loader = PyPDFLoader(tempfilename)
+        pages = loader.load_and_split(text_splitter=text_splitter)
+
+        chain = load_summarize_chain(llm=llm_model, chain_type='map_reduce')
+        response = chain.run(pages)
+
+        st.markdown(response)
+elif hub == 'huggingface-native':
+    if (uploaded_pdffile is not None) and (st.button('Summarize!')):
+        pdfbytes = tempfile.NamedTemporaryFile()
+        tempfilename = pdfbytes.name
+        pdfbytes.write(uploaded_pdffile.read())
+
+        loader = PyPDFLoader(tempfilename)
+        pages = loader.load()
+        body = ' '.join([page.page_content for page in pages])
+
+        summary = summarizer(body, min_length=min_length)
+
+        st.markdown(summary)
+
