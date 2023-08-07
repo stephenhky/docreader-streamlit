@@ -39,7 +39,7 @@ elif hub == 'huggingface':
          'google/flan-t5-xxl', 'databricks/dolly-v2-3b']
     )
 
-    embeddings_model = HuggingFaceEmbeddings(model_name=embedding, model_kwargs={'pad_token': PreTrainedTokenizer.eos_token})
+    embeddings_model = HuggingFaceEmbeddings(model_name=embedding)
     if embeddings_model.client.tokenizer.pad_token is None:
         embeddings_model.client.tokenizer.pad_token = embeddings_model.client.tokenizer.eos_token
 else:
