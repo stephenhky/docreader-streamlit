@@ -10,6 +10,7 @@ from langchain.embeddings import OpenAIEmbeddings, HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain import HuggingFaceHub
 from langchain.chat_models import ChatOpenAI
+from transformers import PreTrainedTokenizer
 
 
 load_dotenv()
@@ -28,7 +29,8 @@ elif hub == 'huggingface':
         'gpt2',
         ['gpt2', 'gpt2-large', 'google/flan-t5-xxl', 'databricks/dolly-v2-3b']
     )
-    llm_model = HuggingFaceHub(repo_id=llm_model_name)
+    temperature = st.number_input('temperature', min_value=0.0, max_value=1.0, value=0.7)
+    llm_model = HuggingFaceHub(repo_id=llm_model_name, model_kwargs={'temperature': temperature})
     embedding = st.radio(
         'gpt2',
         ['gpt2', 'gpt2-large',
@@ -36,7 +38,8 @@ elif hub == 'huggingface':
          "sentence-transformers/allenai-specter"
          'google/flan-t5-xxl', 'databricks/dolly-v2-3b']
     )
-    embeddings_model = HuggingFaceEmbeddings(model_name=embedding)
+
+    embeddings_model = HuggingFaceEmbeddings(model_name=embedding, model_kwargs={'pad_token': PreTrainedTokenizer.eos_token})
     if embeddings_model.client.tokenizer.pad_token is None:
         embeddings_model.client.tokenizer.pad_token = embeddings_model.client.tokenizer.eos_token
 else:
