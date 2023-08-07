@@ -13,6 +13,12 @@ from langchain.chat_models import ChatOpenAI
 from summarizer import TransformerSummarizer
 
 
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=900,
+    chunk_overlap=20,
+    length_function=len
+)
+
 load_dotenv()
 os.environ['OPENAI_API_KEY'] = os.getenv('OPENAI_API_KEY')
 os.environ['HUGGINGFACEHUB_API_TOKEN'] = os.getenv('HUGGINGFACEHUB_API_TOKEN')
@@ -53,36 +59,22 @@ else:
     pass
 
 uploaded_pdffile = st.file_uploader('Upload a file (.pdf)')
+to_summarize = st.button('Summarize')
 
-if hub in ['openai', 'huggingface-langchain']:
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=900,
-        chunk_overlap=20,
-        length_function=len
-    )
+if (uploaded_pdffile is not None) and to_summarize:
+    pdfbytes = tempfile.NamedTemporaryFile()
+    tempfilename = pdfbytes.name
+    pdfbytes.write(uploaded_pdffile.read())
 
-    if (uploaded_pdffile is not None) and (st.button('Summarize!')):
-        pdfbytes = tempfile.NamedTemporaryFile()
-        tempfilename = pdfbytes.name
-        pdfbytes.write(uploaded_pdffile.read())
-
-        loader = PyPDFLoader(tempfilename)
-        pages = loader.load_and_split(text_splitter=text_splitter)
-
+    loader = PyPDFLoader(tempfilename)
+    pages = loader.load_and_split(text_splitter=text_splitter)
+    if hub in ['openai', 'huggingface-langchain']:
         chain = load_summarize_chain(llm=llm_model, chain_type='map_reduce')
         response = chain.run(pages)
 
         st.markdown(response)
-elif hub == 'huggingface-native':
-    if (uploaded_pdffile is not None) and (st.button('Summarize!')):
-        pdfbytes = tempfile.NamedTemporaryFile()
-        tempfilename = pdfbytes.name
-        pdfbytes.write(uploaded_pdffile.read())
-
-        loader = PyPDFLoader(tempfilename)
-        pages = loader.load()
+    elif hub == 'huggingface-native':
         body = ' '.join([page.page_content for page in pages])
-
         summary = summarizer(body, min_length=min_length)
 
         st.markdown(summary)
