@@ -72,13 +72,12 @@ else:
 
 uploaded_pdffile = st.file_uploader('Upload a file (.pdf)')
 
-to_generate = False
 st.text('What to do?')
 action = st.radio('Summarize', ['Summarize', 'Retrieve'])
 
-to_generate = st.button('Generate')
+to_go = st.button('Go!')
 
-if (uploaded_pdffile is not None) and to_generate:
+if (uploaded_pdffile is not None) and to_go:
     pdfbytes = tempfile.NamedTemporaryFile()
     tempfilename = pdfbytes.name
     pdfbytes.write(uploaded_pdffile.read())
