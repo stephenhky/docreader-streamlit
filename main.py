@@ -49,10 +49,20 @@ elif hub == 'huggingface-langchain':
     if embeddings_model.client.tokenizer.pad_token is None:
         embeddings_model.client.tokenizer.pad_token = embeddings_model.client.tokenizer.eos_token
 elif hub == 'huggingface-native':
-    llm_model_name = st.radio(
-        'gpt2',
-        ['gpt2', 'gpt2-medium', 'gpt2-large']
+    transformer_type = st.radio(
+        'GPT2',
+        ['GPT2', 'XLNet']
     )
+    if transformer_type == 'GPT2':
+        llm_model_name = st.radio(
+            'gpt2',
+            ['gpt2', 'gpt2-medium', 'gpt2-large', 'distilgpt2']
+        )
+    elif transformer_type == 'XLNet':
+        llm_model_name = st.radio(
+            'xlnet-base-cased',
+            ['xlnet-base-cased', 'xlnet-large-cased', 'textattack/xlnet-base-cased-imdb']
+        )
     min_length = st.number_input('min_length', min_value=1, value=60)
     summarizer = TransformerSummarizer(transformer_type='GPT2', transformer_model_key=llm_model_name)
 else:
