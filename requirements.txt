@@ -3,3 +3,9 @@ python-dotenv
 transformers
 bert-extractive-summarizer
 langchain
+openai
+huggingface_hub
+sentence_transformers
+pypdf
+faiss-cpu
+PyCryptodome
