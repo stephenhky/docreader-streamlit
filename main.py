@@ -43,7 +43,7 @@ elif hub == 'huggingface-langchain':
         'gpt2',
         ['gpt2', 'gpt2-large',
          'sentence-transformers/all-MiniLM-L6-v2',
-         "sentence-transformers/allenai-specter"
+         "sentence-transformers/allenai-specter",
          'google/flan-t5-xxl', 'databricks/dolly-v2-3b']
     )
 
