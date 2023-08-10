@@ -9,3 +9,4 @@ sentence_transformers
 pypdf
 faiss-cpu
 PyCryptodome
+tiktoken
