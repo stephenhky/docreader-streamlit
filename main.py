@@ -5,11 +5,13 @@ import tempfile
 import streamlit as st
 from dotenv import load_dotenv
 from langchain.document_loaders import PyPDFLoader
+from langchain.chains import RetrievalQA
 from langchain.chains.summarize import load_summarize_chain
 from langchain.embeddings import OpenAIEmbeddings, HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain import HuggingFaceHub
 from langchain.chat_models import ChatOpenAI
+from langchain.vectorstores import FAISS
 from summarizer import TransformerSummarizer
 
 
@@ -45,9 +47,9 @@ elif hub == 'huggingface-langchain':
          'google/flan-t5-xxl', 'databricks/dolly-v2-3b']
     )
 
-    embeddings_model = HuggingFaceEmbeddings(model_name=embedding)
-    if embeddings_model.client.tokenizer.pad_token is None:
-        embeddings_model.client.tokenizer.pad_token = embeddings_model.client.tokenizer.eos_token
+    embeddings = HuggingFaceEmbeddings(model_name=embedding)
+    if embeddings.client.tokenizer.pad_token is None:
+        embeddings.client.tokenizer.pad_token = embeddings.client.tokenizer.eos_token
 elif hub == 'huggingface-native':
     transformer_type = st.radio(
         'GPT2',
@@ -69,23 +71,46 @@ else:
     pass
 
 uploaded_pdffile = st.file_uploader('Upload a file (.pdf)')
-to_summarize = st.button('Summarize')
 
-if (uploaded_pdffile is not None) and to_summarize:
+to_generate = False
+st.text('What to do?')
+action = st.radio('Summarize', ['Summarize', 'Retrieve'])
+
+to_generate = st.button('Generate')
+
+if (uploaded_pdffile is not None) and to_generate:
     pdfbytes = tempfile.NamedTemporaryFile()
     tempfilename = pdfbytes.name
     pdfbytes.write(uploaded_pdffile.read())
 
     loader = PyPDFLoader(tempfilename)
     pages = loader.load_and_split(text_splitter=text_splitter)
-    if hub in ['openai', 'huggingface-langchain']:
-        chain = load_summarize_chain(llm=llm_model, chain_type='map_reduce')
-        response = chain.run(pages)
 
-        st.markdown(response)
-    elif hub == 'huggingface-native':
-        body = ' '.join([page.page_content for page in pages])
-        summary = summarizer(body, min_length=min_length)
+    if action == 'Summarize':
+        if hub in ['openai', 'huggingface-langchain']:
+            chain = load_summarize_chain(llm=llm_model, chain_type='map_reduce')
+            response = chain.run(pages)
 
-        st.markdown(summary)
+            st.markdown(response)
+        elif hub == 'huggingface-native':
+            body = ' '.join([page.page_content for page in pages])
+            summary = summarizer(body, min_length=min_length)
 
+            st.markdown(summary)
+
+    elif action == 'Retrieve':
+        if hub in ['openai', 'huggingface-langchain']:
+            db = FAISS.from_documents(pages, embeddings)
+
+            question = st.text_area('Ask a question:')
+            retriever = db.as_retriever()
+            qa = RetrievalQA.from_chain_type(
+                llm=llm_model,
+                chain_type='stuff',
+                retriever=retriever,
+                return_source_documents=False
+            )
+            answer = qa({'query': question})
+            st.markdown(answer['result'])
+        else:
+            st.text('Not implemented.')
