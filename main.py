@@ -75,9 +75,7 @@ uploaded_pdffile = st.file_uploader('Upload a file (.pdf)')
 st.text('What to do?')
 action = st.radio('Summarize', ['Summarize', 'Retrieve'])
 
-to_go = st.button('Go!')
-
-if (uploaded_pdffile is not None) and to_go:
+if (uploaded_pdffile is not None):
     pdfbytes = tempfile.NamedTemporaryFile()
     tempfilename = pdfbytes.name
     pdfbytes.write(uploaded_pdffile.read())
@@ -86,16 +84,17 @@ if (uploaded_pdffile is not None) and to_go:
     pages = loader.load_and_split(text_splitter=text_splitter)
 
     if action == 'Summarize':
-        if hub in ['openai', 'huggingface-langchain']:
-            chain = load_summarize_chain(llm=llm_model, chain_type='map_reduce')
-            response = chain.run(pages)
+        if st.button('Summarize'):
+            if hub in ['openai', 'huggingface-langchain']:
+                chain = load_summarize_chain(llm=llm_model, chain_type='map_reduce')
+                response = chain.run(pages)
 
-            st.markdown(response)
-        elif hub == 'huggingface-native':
-            body = ' '.join([page.page_content for page in pages])
-            summary = summarizer(body, min_length=min_length)
+                st.markdown(response)
+            elif hub == 'huggingface-native':
+                body = ' '.join([page.page_content for page in pages])
+                summary = summarizer(body, min_length=min_length)
 
-            st.markdown(summary)
+                st.markdown(summary)
 
     elif action == 'Retrieve':
         if hub in ['openai', 'huggingface-langchain']:
