@@ -103,14 +103,16 @@ if (uploaded_pdffile is not None) and to_generate:
             db = FAISS.from_documents(pages, embeddings)
 
             question = st.text_area('Ask a question:')
-            retriever = db.as_retriever()
-            qa = RetrievalQA.from_chain_type(
-                llm=llm_model,
-                chain_type='stuff',
-                retriever=retriever,
-                return_source_documents=False
-            )
-            answer = qa({'query': question})
-            st.markdown(answer['result'])
+            to_ask = st.button('Ask')
+            if to_ask:
+                retriever = db.as_retriever()
+                qa = RetrievalQA.from_chain_type(
+                    llm=llm_model,
+                    chain_type='stuff',
+                    retriever=retriever,
+                    return_source_documents=False
+                )
+                answer = qa({'query': question})
+                st.markdown(answer['result'])
         else:
             st.text('Not implemented.')
