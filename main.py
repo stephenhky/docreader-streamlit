@@ -28,7 +28,7 @@ os.environ['HUGGINGFACEHUB_API_TOKEN'] = os.getenv('HUGGINGFACEHUB_API_TOKEN')
 hub = st.radio('openai', ['openai', 'huggingface-langchain', 'huggingface-native'])
 if hub == 'openai':
     llm_model_name = st.radio('gpt-3.5-turbo', ['gpt-3.5-turbo', 'gpt-4'])
-    temperature = st.number_input('temperature', min_value=0.0, max_value=1.0, value=0.7)
+    temperature = st.number_input('temperature', min_value=0.0, value=0.7)
     max_tokens = st.number_input('max_tokens', min_value=1, value=600)
     llm_model = ChatOpenAI(temperature=temperature, model_name=llm_model_name, max_tokens=max_tokens)
     embeddings = OpenAIEmbeddings()
@@ -37,7 +37,7 @@ elif hub == 'huggingface-langchain':
         'gpt2',
         ['gpt2', 'gpt2-large', 'google/flan-t5-xxl', 'databricks/dolly-v2-3b']
     )
-    temperature = st.number_input('temperature', min_value=0.0, max_value=1.0, value=0.7)
+    temperature = st.number_input('temperature', min_value=0.0, value=0.7)
     llm_model = HuggingFaceHub(repo_id=llm_model_name, model_kwargs={'temperature': temperature})
     embedding = st.radio(
         'gpt2',
